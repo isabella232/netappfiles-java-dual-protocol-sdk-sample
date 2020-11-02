@@ -117,108 +117,60 @@ public class main
         //---------------------------
         Utils.writeConsoleMessage("Creating Azure NetApp Files Account...");
 
+        // Setting up Active Directories Object
+        ActiveDirectory activeDirectory = new ActiveDirectory();
+        activeDirectory.withUsername(domainJoinUsername);
+        activeDirectory.withPassword(domainJoinUserPassword);
+        activeDirectory.withDns(dnsList);
+        activeDirectory.withDomain(adFQDN);
+        activeDirectory.withSmbServerName(smbServerNamePrefix);
+        activeDirectory.withServerRootCACertificate(encodedCertContent);
+
+        NetAppAccountInner newAccount = new NetAppAccountInner();
+        newAccount.withLocation(location);
+        newAccount.withActiveDirectories(Collections.singletonList(activeDirectory));
+
         String[] accountParams = {resourceGroupName, anfAccountName};
-        NetAppAccountInner anfAccount = await(CommonSdk.getResourceAsync(anfClient, accountParams, NetAppAccountInner.class));
-        if (anfAccount == null)
-        {
-            // Setting up Active Directories Object
-            ActiveDirectory activeDirectory = new ActiveDirectory();
-            activeDirectory.withUsername(domainJoinUsername);
-            activeDirectory.withPassword(domainJoinUserPassword);
-            activeDirectory.withDns(dnsList);
-            activeDirectory.withDomain(adFQDN);
-            activeDirectory.withSmbServerName(smbServerNamePrefix);
-            activeDirectory.withServerRootCACertificate(encodedCertContent);
-
-            NetAppAccountInner newAccount = new NetAppAccountInner();
-            newAccount.withLocation(location);
-            newAccount.withActiveDirectories(Collections.singletonList(activeDirectory));
-
-            try
-            {
-                anfAccount = await(Creation.createANFAccount(anfClient, resourceGroupName, anfAccountName, newAccount));
-            }
-            catch (CloudException e)
-            {
-                Utils.writeConsoleMessage("An error occurred while creating account: " + e.body().message());
-                throw e;
-            }
-        }
-        else
-        {
-            Utils.writeConsoleMessage("Account already exists");
-        }
+        // Create ANF Account if if doesn't exist, update it with AD connection if it does
+        NetAppAccountInner anfAccount = await(Creation.createANFAccount(anfClient, accountParams, newAccount));
 
         //---------------------------
         // Create Capacity Pool
         //---------------------------
         Utils.writeConsoleMessage("Creating Capacity Pool...");
 
-        String[] poolParams = {resourceGroupName, anfAccountName, capacityPoolName};
-        CapacityPoolInner capacityPool = await(CommonSdk.getResourceAsync(anfClient, poolParams, CapacityPoolInner.class));
-        if (capacityPool == null)
-        {
-            CapacityPoolInner newCapacityPool = new CapacityPoolInner();
-            newCapacityPool.withServiceLevel(ServiceLevel.fromString(capacityPoolServiceLevel));
-            newCapacityPool.withSize(capacityPoolSize);
-            newCapacityPool.withLocation(location);
+        CapacityPoolInner newCapacityPool = new CapacityPoolInner();
+        newCapacityPool.withServiceLevel(ServiceLevel.fromString(capacityPoolServiceLevel));
+        newCapacityPool.withSize(capacityPoolSize);
+        newCapacityPool.withLocation(location);
 
-            try
-            {
-                capacityPool = await(Creation.createCapacityPool(anfClient, resourceGroupName, anfAccountName, capacityPoolName, newCapacityPool));
-            }
-            catch (CloudException e)
-            {
-                Utils.writeConsoleMessage("An error occurred while creating capacity pool: " + e.body().message());
-                throw e;
-            }
-        }
-        else
-        {
-            Utils.writeConsoleMessage("Capacity Pool already exists");
-        }
+        String[] poolParams = {resourceGroupName, anfAccountName, capacityPoolName};
+        CapacityPoolInner capacityPool = await(Creation.createCapacityPool(anfClient, poolParams, newCapacityPool));
 
         //---------------------------
         // Create Volume
         //---------------------------
         Utils.writeConsoleMessage("Creating Volume with dual protocol...");
 
+        String subnetId = "/subscriptions/" + subscriptionId + "/resourceGroups/" + resourceGroupName +
+                "/providers/Microsoft.Network/virtualNetworks/" + vnetName + "/subnets/" + subnetName;
+
+        List<String> protocolTypes = new ArrayList<>();
+        protocolTypes.add("CIFS");
+        protocolTypes.add("NFSv3");
+
+        VolumeInner newVolume = new VolumeInner();
+        newVolume.withLocation(location);
+        newVolume.withServiceLevel(ServiceLevel.fromString(capacityPoolServiceLevel));
+        newVolume.withCreationToken(volumeName);
+        newVolume.withSubnetId(subnetId);
+        newVolume.withUsageThreshold(volumeSize);
+        newVolume.withProtocolTypes(protocolTypes);
+        newVolume.withSecurityStyle(SecurityStyle.NTFS);
+
         String[] volumeParams = {resourceGroupName, anfAccountName, capacityPoolName, volumeName};
-        VolumeInner volume = await(CommonSdk.getResourceAsync(anfClient, volumeParams, VolumeInner.class));
-        if (volume == null)
-        {
-            String subnetId = "/subscriptions/" + subscriptionId + "/resourceGroups/" + resourceGroupName +
-                    "/providers/Microsoft.Network/virtualNetworks/" + vnetName + "/subnets/" + subnetName;
+        VolumeInner volume = await(Creation.createVolume(anfClient, volumeParams, newVolume));
 
-            List<String> protocolTypes = new ArrayList<>();
-            protocolTypes.add("CIFS");
-            protocolTypes.add("NFSv3");
-
-            VolumeInner newVolume = new VolumeInner();
-            newVolume.withLocation(location);
-            newVolume.withServiceLevel(ServiceLevel.fromString(capacityPoolServiceLevel));
-            newVolume.withCreationToken(volumeName);
-            newVolume.withSubnetId(subnetId);
-            newVolume.withUsageThreshold(volumeSize);
-            newVolume.withProtocolTypes(protocolTypes);
-            newVolume.withSecurityStyle(SecurityStyle.NTFS);
-
-            try
-            {
-                volume = await(Creation.createVolume(anfClient, resourceGroupName, anfAccountName, capacityPoolName, volumeName, newVolume));
-            }
-            catch (CloudException e)
-            {
-                Utils.writeConsoleMessage("An error occurred while creating volume: " + e.body().message());
-                throw e;
-            }
-        }
-        else
-        {
-            Utils.writeConsoleMessage("Volume already exists");
-        }
-
-        volume = await(CommonSdk.getResourceAsync(anfClient, volumeParams, VolumeInner.class));
         Utils.writeConsoleMessage("Current Volume protocol types: " + volume.protocolTypes());
         Utils.writeConsoleMessage("SMB Server FQDN: " + volume.mountTargets().get(0).smbServerFqdn());
         Utils.writeConsoleMessage("NFS IP Address: " + volume.mountTargets().get(0).ipAddress());

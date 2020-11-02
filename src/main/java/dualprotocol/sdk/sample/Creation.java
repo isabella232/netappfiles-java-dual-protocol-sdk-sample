@@ -5,6 +5,7 @@
 
 package dualprotocol.sdk.sample;
 
+import com.microsoft.azure.CloudException;
 import com.microsoft.azure.management.netapp.v2020_06_01.implementation.*;
 import dualprotocol.sdk.sample.common.Utils;
 
@@ -15,54 +16,69 @@ public class Creation
     /**
      * Creates an ANF Account
      * @param anfClient Azure NetApp Files Management Client
-     * @param resourceGroup Name of the resource group where the Account will be created
-     * @param accountName Name of the Account being created
+     * @param accountParams Contains resource group and Account name to use
      * @param accountBody The Account body used in the creation
      * @return The newly created ANF Account
      */
-    public static CompletableFuture<NetAppAccountInner> createANFAccount(AzureNetAppFilesManagementClientImpl anfClient, String resourceGroup,
-                                                                         String accountName, NetAppAccountInner accountBody)
+    public static CompletableFuture<NetAppAccountInner> createANFAccount(AzureNetAppFilesManagementClientImpl anfClient, String[] accountParams, NetAppAccountInner accountBody)
     {
-        NetAppAccountInner anfAccount = anfClient.accounts().createOrUpdate(resourceGroup, accountName, accountBody);
-        Utils.writeSuccessMessage("Account successfully created, resourceId: " + anfAccount.id());
+        try
+        {
+            NetAppAccountInner anfAccount = anfClient.accounts().createOrUpdate(accountParams[0], accountParams[1], accountBody);
+            Utils.writeSuccessMessage("Account successfully created, resourceId: " + anfAccount.id());
 
-        return CompletableFuture.completedFuture(anfAccount);
+            return CompletableFuture.completedFuture(anfAccount);
+        }
+        catch (CloudException e)
+        {
+            Utils.writeConsoleMessage("An error occurred while creating account: " + e.body().message());
+            throw e;
+        }
     }
 
     /**
      * Creates a Capacity Pool
      * @param anfClient Azure NetApp Files Management Client
-     * @param resourceGroup Name of the resource group where the Capacity Pool will be created
-     * @param accountName Name of the Account
-     * @param poolName Name of the Capacity Pool being created
+     * @param poolParams Contains resource group, Account name, and Pool name to use
      * @param poolBody The Capacity Pool body used in the creation
      * @return The newly created Capacity Pool
      */
-    public static CompletableFuture<CapacityPoolInner> createCapacityPool(AzureNetAppFilesManagementClientImpl anfClient, String resourceGroup,
-                                                                          String accountName, String poolName, CapacityPoolInner poolBody)
+    public static CompletableFuture<CapacityPoolInner> createCapacityPool(AzureNetAppFilesManagementClientImpl anfClient, String[] poolParams, CapacityPoolInner poolBody)
     {
-        CapacityPoolInner capacityPool = anfClient.pools().createOrUpdate(resourceGroup, accountName, poolName, poolBody);
-        Utils.writeSuccessMessage("Capacity Pool successfully created, resourceId: " + capacityPool.id());
+        try
+        {
+            CapacityPoolInner capacityPool = anfClient.pools().createOrUpdate(poolParams[0], poolParams[1], poolParams[2], poolBody);
+            Utils.writeSuccessMessage("Capacity Pool successfully created, resourceId: " + capacityPool.id());
 
-        return CompletableFuture.completedFuture(capacityPool);
+            return CompletableFuture.completedFuture(capacityPool);
+        }
+        catch (CloudException e)
+        {
+            Utils.writeConsoleMessage("An error occurred while creating capacity pool: " + e.body().message());
+            throw e;
+        }
     }
 
     /**
      * Creates a Dual-Protocol Volume
      * @param anfClient Azure NetApp Files Management Client
-     * @param resourceGroup Name of the resource group where the Volume will be created
-     * @param accountName Name of the Account
-     * @param poolName Name of the Capacity Pool
-     * @param volumeName Name of the Volume being created
+     * @param volumeParams Contains resource group, Account name, Pool name, and Volume name to use
      * @param volumeBody The Volume body used in the creation
      * @return The newly created Volume
      */
-    public static CompletableFuture<VolumeInner> createVolume(AzureNetAppFilesManagementClientImpl anfClient, String resourceGroup,
-                                                              String accountName, String poolName, String volumeName, VolumeInner volumeBody)
+    public static CompletableFuture<VolumeInner> createVolume(AzureNetAppFilesManagementClientImpl anfClient, String[] volumeParams, VolumeInner volumeBody)
     {
-        VolumeInner volume = anfClient.volumes().createOrUpdate(resourceGroup, accountName, poolName, volumeName, volumeBody);
-        Utils.writeSuccessMessage("Volume successfully created, resourceId: " + volume.id());
+        try
+        {
+            VolumeInner volume = anfClient.volumes().createOrUpdate(volumeParams[0], volumeParams[1], volumeParams[2], volumeParams[3], volumeBody);
+            Utils.writeSuccessMessage("Volume successfully created, resourceId: " + volume.id());
 
-        return CompletableFuture.completedFuture(volume);
+            return CompletableFuture.completedFuture(volume);
+        }
+        catch (CloudException e)
+        {
+            Utils.writeConsoleMessage("An error occurred while creating volume: " + e.body().message());
+            throw e;
+        }
     }
 }
