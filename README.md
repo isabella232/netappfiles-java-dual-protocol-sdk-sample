@@ -120,13 +120,13 @@ The following table describes all files within this solution:
     ```powershell
     mvn clean compile
     ```
-1. Run the console application
+1. Run the console application 
     ```powershell
     mvn exec:java -Dexec.mainClass="dualprotocol.sdk.sample.main"
     ```
 
 Sample output
-![e2e execution](./media/e2e-execution.png)
+![e2e execution](./media/e2e-execution.png) 
 
 ## References
 
