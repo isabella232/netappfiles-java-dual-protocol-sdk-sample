@@ -11,9 +11,9 @@ description: "This project demonstrates how to create a Dual-Protocol Volume for
 # Azure NetAppFiles SDK Sample - Dual-Protocol for Java
 
 This project demonstrates how to use a Java sample application to create a Dual-Protocol Volume (a Volume that uses both SMB/NFS protocol types)
-for the Microsoft.NetApp resource provider.
+for the Microsoft.NetApp resource provider. 
 
-In this sample application we perform the following operations:
+In this sample application we perform the following operations: 
 
 * Creations
     * ANF Account
