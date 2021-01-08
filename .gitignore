@@ -1,0 +1,13 @@
+# Specific files to ignore since they might contain sensitive information
+azureauth*.json
+*.cer
+
+# Maven generated classes and sources
+target/
+
+# Intellij auto-generated files
+.DS_Store
+.idea
+*.iml
+out/
+resources/
