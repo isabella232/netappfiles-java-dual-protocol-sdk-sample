@@ -5,7 +5,7 @@
 
 package dualprotocol.sdk.sample;
 
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.AzureNetAppFilesManagementClientImpl;
+import com.azure.resourcemanager.netapp.fluent.NetAppManagementClient;
 import dualprotocol.sdk.sample.common.Utils;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,36 +18,33 @@ public class Cleanup
      * @param params String array containing account name, pool name, etc, needed to delete resource
      * @param clazz Which resource is being deleted
      */
-    public static <T> CompletableFuture<Void> runCleanupTask(AzureNetAppFilesManagementClientImpl anfClient, String[] params, Class<T> clazz)
+    public static <T> void runCleanupTask(NetAppManagementClient anfClient, String[] params, Class<T> clazz)
     {
         switch (clazz.getSimpleName())
         {
             case "VolumeInner":
                 Utils.writeConsoleMessage("Deleting Volume...");
-                anfClient.volumes().delete(
+                anfClient.getVolumes().beginDelete(
                         params[0],
                         params[1],
                         params[2],
-                        params[3]);
+                        params[3]).getFinalResult();
                 break;
 
             case "CapacityPoolInner":
                 Utils.writeConsoleMessage("Deleting Capacity Pool...");
-                anfClient.pools().delete(
+                anfClient.getPools().beginDelete(
                         params[0],
                         params[1],
-                        params[2]);
+                        params[2]).getFinalResult();
                 break;
 
             case "NetAppAccountInner":
                 Utils.writeConsoleMessage("Deleting Account...");
-                anfClient.accounts().delete(
+                anfClient.getAccounts().beginDelete(
                         params[0],
-                        params[1]);
+                        params[1]).getFinalResult();
                 break;
-
         }
-
-        return CompletableFuture.completedFuture(null);
     }
 }

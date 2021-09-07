@@ -5,16 +5,17 @@
 
 package dualprotocol.sdk.sample;
 
-import com.ea.async.Async;
-import com.microsoft.azure.CloudException;
-import com.microsoft.azure.management.netapp.v2020_06_01.ActiveDirectory;
-import com.microsoft.azure.management.netapp.v2020_06_01.SecurityStyle;
-import com.microsoft.azure.management.netapp.v2020_06_01.ServiceLevel;
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.AzureNetAppFilesManagementClientImpl;
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.CapacityPoolInner;
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.NetAppAccountInner;
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.VolumeInner;
-import com.microsoft.rest.credentials.ServiceClientCredentials;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.management.AzureEnvironment;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.resourcemanager.netapp.NetAppFilesManager;
+import com.azure.resourcemanager.netapp.fluent.models.CapacityPoolInner;
+import com.azure.resourcemanager.netapp.fluent.models.NetAppAccountInner;
+import com.azure.resourcemanager.netapp.fluent.models.VolumeInner;
+import com.azure.resourcemanager.netapp.models.ActiveDirectory;
+import com.azure.resourcemanager.netapp.models.SecurityStyle;
+import com.azure.resourcemanager.netapp.models.ServiceLevel;
 import dualprotocol.sdk.sample.common.CommonSdk;
 import dualprotocol.sdk.sample.common.Utils;
 
@@ -22,9 +23,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static com.ea.async.Async.await;
 
 public class main
 {
@@ -39,8 +37,7 @@ public class main
 
         try
         {
-            Async.init();
-            runAsync();
+            run();
             Utils.writeConsoleMessage("Sample application successfully completed execution");
         }
         catch (Exception e)
@@ -51,22 +48,22 @@ public class main
         System.exit(0);
     }
 
-    private static CompletableFuture<Void> runAsync()
+    private static void run()
     {
         //---------------------------------------------------------------------------------------------------------------------
         // Setting variables necessary for resources creation - change these to appropriate values related to your environment
         //---------------------------------------------------------------------------------------------------------------------
         boolean cleanup = false;
 
-        String subscriptionId = "<subscription id>";
-        String location = "eastus";
-        String resourceGroupName = "anf01-rg";
-        String vnetName = "vnet";
-        String subnetName = "anf-sn";
-        String anfAccountName = "test-account01";
-        String capacityPoolName = "test-pool01";
+        String subscriptionId = "<subscription-id>";
+        String location = "<location>";
+        String resourceGroupName = "<resource-group-name>";
+        String vnetName = "<vnet-name>";
+        String subnetName = "<subnet-name>";
+        String anfAccountName = "anf-java-example-account";
+        String capacityPoolName = "anf-java-example-pool";
         String capacityPoolServiceLevel = "Standard"; // Valid service levels are: Ultra, Premium, Standard
-        String volumeName = "test-vol01";
+        String volumeName = "anf-java-example-volume";
 
         long capacityPoolSize = 4398046511104L;  // 4TiB which is minimum size
         long volumeSize = 107374182400L;  // 100GiB - volume minimum size
@@ -82,18 +79,14 @@ public class main
         //---------------------------------------------------------------------------------------------------------------------
 
 
-        // Authenticating using service principal, refer to README.md file for requirement details
-        ServiceClientCredentials credentials = Utils.getServicePrincipalCredentials(System.getenv("AZURE_AUTH_LOCATION"));
-        if (credentials == null)
-        {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // Instantiating a new ANF management client
+        // Instantiating a new ANF management client and authenticate
+        AzureProfile profile = new AzureProfile(AzureEnvironment.AZURE);
+        TokenCredential credential = new DefaultAzureCredentialBuilder()
+                .authorityHost(profile.getEnvironment().getActiveDirectoryEndpoint())
+                .build();
         Utils.writeConsoleMessage("Instantiating a new Azure NetApp Files management client...");
-        AzureNetAppFilesManagementClientImpl anfClient = new AzureNetAppFilesManagementClientImpl(credentials);
-        anfClient.withSubscriptionId(subscriptionId);
-        Utils.writeConsoleMessage("Api Version: " + anfClient.apiVersion());
+        NetAppFilesManager manager = NetAppFilesManager
+                .authenticate(credential, profile);
 
         //------------------------------------------------------------------------------------------------------
         // Getting Active Directory Identity's password (from identity that has rights to domain join computers)
@@ -104,7 +97,7 @@ public class main
         String certContent = Utils.getRootCACert(rootCACertFullFilePath);
         if (certContent == null)
         {
-            return CompletableFuture.completedFuture(null);
+            return;
         }
         String encodedCertContent = Base64.getEncoder().encodeToString(certContent.getBytes());
 
@@ -131,8 +124,8 @@ public class main
         newAccount.withActiveDirectories(Collections.singletonList(activeDirectory));
 
         String[] accountParams = {resourceGroupName, anfAccountName};
-        // Create ANF Account if if doesn't exist, update it with AD connection if it does
-        NetAppAccountInner anfAccount = await(Creation.createANFAccount(anfClient, accountParams, newAccount));
+        // Create ANF Account if it doesn't exist, update it with AD connection if it does
+        NetAppAccountInner anfAccount = Creation.createANFAccount(manager.serviceClient(), accountParams, newAccount);
 
         //---------------------------
         // Create Capacity Pool
@@ -145,7 +138,7 @@ public class main
         newCapacityPool.withLocation(location);
 
         String[] poolParams = {resourceGroupName, anfAccountName, capacityPoolName};
-        CapacityPoolInner capacityPool = await(Creation.createCapacityPool(anfClient, poolParams, newCapacityPool));
+        CapacityPoolInner capacityPool = Creation.createCapacityPool(manager.serviceClient(), poolParams, newCapacityPool);
 
         //---------------------------
         // Create Volume
@@ -169,7 +162,7 @@ public class main
         newVolume.withSecurityStyle(SecurityStyle.NTFS);
 
         String[] volumeParams = {resourceGroupName, anfAccountName, capacityPoolName, volumeName};
-        VolumeInner volume = await(Creation.createVolume(anfClient, volumeParams, newVolume));
+        VolumeInner volume = Creation.createVolume(manager.serviceClient(), volumeParams, newVolume);
 
         Utils.writeConsoleMessage("Current Volume protocol types: " + volume.protocolTypes());
         Utils.writeConsoleMessage("SMB Server FQDN: " + volume.mountTargets().get(0).smbServerFqdn());
@@ -192,26 +185,24 @@ public class main
 
             try
             {
-                await(Cleanup.runCleanupTask(anfClient, volumeParams, VolumeInner.class));
+                Cleanup.runCleanupTask(manager.serviceClient(), volumeParams, VolumeInner.class);
                 // ARM workaround to wait for the deletion to complete
-                CommonSdk.waitForNoANFResource(anfClient, volume.id(), VolumeInner.class);
+                CommonSdk.waitForNoANFResource(manager.serviceClient(), volume.id(), VolumeInner.class);
                 Utils.writeSuccessMessage("Volume successfully deleted: " + volume.id());
 
-                await(Cleanup.runCleanupTask(anfClient, poolParams, CapacityPoolInner.class));
-                CommonSdk.waitForNoANFResource(anfClient, capacityPool.id(), CapacityPoolInner.class);
+                Cleanup.runCleanupTask(manager.serviceClient(), poolParams, CapacityPoolInner.class);
+                CommonSdk.waitForNoANFResource(manager.serviceClient(), capacityPool.id(), CapacityPoolInner.class);
                 Utils.writeSuccessMessage("Primary Capacity Pool successfully deleted: " + capacityPool.id());
 
-                await(Cleanup.runCleanupTask(anfClient, accountParams, NetAppAccountInner.class));
-                CommonSdk.waitForNoANFResource(anfClient, anfAccount.id(), NetAppAccountInner.class);
+                Cleanup.runCleanupTask(manager.serviceClient(), accountParams, NetAppAccountInner.class);
+                CommonSdk.waitForNoANFResource(manager.serviceClient(), anfAccount.id(), NetAppAccountInner.class);
                 Utils.writeSuccessMessage("Account successfully deleted: " + anfAccount.id());
             }
-            catch (CloudException e)
+            catch (Exception e)
             {
-                Utils.writeConsoleMessage("An error occurred while deleting resource: " + e.body().message());
+                Utils.writeConsoleMessage("An error occurred while deleting resource: " + e.getMessage());
                 throw e;
             }
         }
-
-        return CompletableFuture.completedFuture(null);
     }
 }
