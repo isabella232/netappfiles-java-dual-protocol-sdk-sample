@@ -5,6 +5,7 @@
 
 package dualprotocol.sdk.sample;
 
+import com.azure.core.exception.AzureException;
 import com.azure.resourcemanager.netapp.fluent.NetAppManagementClient;
 import com.azure.resourcemanager.netapp.fluent.models.CapacityPoolInner;
 import com.azure.resourcemanager.netapp.fluent.models.NetAppAccountInner;
@@ -29,7 +30,7 @@ public class Creation
 
             return anfAccount;
         }
-        catch (Exception e)
+        catch (AzureException e)
         {
             Utils.writeConsoleMessage("An error occurred while creating account: " + e.getMessage());
             throw e;
@@ -52,7 +53,7 @@ public class Creation
 
             return capacityPool;
         }
-        catch (Exception e)
+        catch (AzureException e)
         {
             Utils.writeConsoleMessage("An error occurred while creating capacity pool: " + e.getMessage());
             throw e;
@@ -75,7 +76,7 @@ public class Creation
 
             return volume;
         }
-        catch (Exception e)
+        catch (AzureException e)
         {
             Utils.writeConsoleMessage("An error occurred while creating volume: " + e.getMessage());
             throw e;

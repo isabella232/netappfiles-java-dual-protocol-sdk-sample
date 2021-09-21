@@ -8,8 +8,6 @@ package dualprotocol.sdk.sample.common;
 import com.azure.resourcemanager.netapp.fluent.NetAppManagementClient;
 import com.azure.resourcemanager.netapp.fluent.models.*;
 
-import java.util.concurrent.CompletableFuture;
-
 // Contains public methods for SDK related operations
 public class CommonSdk
 {

@@ -6,6 +6,7 @@
 package dualprotocol.sdk.sample;
 
 import com.azure.core.credential.TokenCredential;
+import com.azure.core.exception.AzureException;
 import com.azure.core.management.AzureEnvironment;
 import com.azure.core.management.profile.AzureProfile;
 import com.azure.identity.DefaultAzureCredentialBuilder;
@@ -198,7 +199,7 @@ public class main
                 CommonSdk.waitForNoANFResource(manager.serviceClient(), anfAccount.id(), NetAppAccountInner.class);
                 Utils.writeSuccessMessage("Account successfully deleted: " + anfAccount.id());
             }
-            catch (Exception e)
+            catch (AzureException e)
             {
                 Utils.writeConsoleMessage("An error occurred while deleting resource: " + e.getMessage());
                 throw e;
