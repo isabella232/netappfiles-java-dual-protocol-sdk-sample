@@ -5,11 +5,12 @@
 
 package dualprotocol.sdk.sample;
 
-import com.microsoft.azure.CloudException;
-import com.microsoft.azure.management.netapp.v2020_06_01.implementation.*;
+import com.azure.core.exception.AzureException;
+import com.azure.resourcemanager.netapp.fluent.NetAppManagementClient;
+import com.azure.resourcemanager.netapp.fluent.models.CapacityPoolInner;
+import com.azure.resourcemanager.netapp.fluent.models.NetAppAccountInner;
+import com.azure.resourcemanager.netapp.fluent.models.VolumeInner;
 import dualprotocol.sdk.sample.common.Utils;
-
-import java.util.concurrent.CompletableFuture;
 
 public class Creation
 {
@@ -20,18 +21,18 @@ public class Creation
      * @param accountBody The Account body used in the creation
      * @return The newly created ANF Account
      */
-    public static CompletableFuture<NetAppAccountInner> createANFAccount(AzureNetAppFilesManagementClientImpl anfClient, String[] accountParams, NetAppAccountInner accountBody)
+    public static NetAppAccountInner createANFAccount(NetAppManagementClient anfClient, String[] accountParams, NetAppAccountInner accountBody)
     {
         try
         {
-            NetAppAccountInner anfAccount = anfClient.accounts().createOrUpdate(accountParams[0], accountParams[1], accountBody);
+            NetAppAccountInner anfAccount = anfClient.getAccounts().beginCreateOrUpdate(accountParams[0], accountParams[1], accountBody).getFinalResult();
             Utils.writeSuccessMessage("Account successfully created, resourceId: " + anfAccount.id());
 
-            return CompletableFuture.completedFuture(anfAccount);
+            return anfAccount;
         }
-        catch (CloudException e)
+        catch (AzureException e)
         {
-            Utils.writeConsoleMessage("An error occurred while creating account: " + e.body().message());
+            Utils.writeConsoleMessage("An error occurred while creating account: " + e.getMessage());
             throw e;
         }
     }
@@ -43,18 +44,18 @@ public class Creation
      * @param poolBody The Capacity Pool body used in the creation
      * @return The newly created Capacity Pool
      */
-    public static CompletableFuture<CapacityPoolInner> createCapacityPool(AzureNetAppFilesManagementClientImpl anfClient, String[] poolParams, CapacityPoolInner poolBody)
+    public static CapacityPoolInner createCapacityPool(NetAppManagementClient anfClient, String[] poolParams, CapacityPoolInner poolBody)
     {
         try
         {
-            CapacityPoolInner capacityPool = anfClient.pools().createOrUpdate(poolParams[0], poolParams[1], poolParams[2], poolBody);
+            CapacityPoolInner capacityPool = anfClient.getPools().beginCreateOrUpdate(poolParams[0], poolParams[1], poolParams[2], poolBody).getFinalResult();
             Utils.writeSuccessMessage("Capacity Pool successfully created, resourceId: " + capacityPool.id());
 
-            return CompletableFuture.completedFuture(capacityPool);
+            return capacityPool;
         }
-        catch (CloudException e)
+        catch (AzureException e)
         {
-            Utils.writeConsoleMessage("An error occurred while creating capacity pool: " + e.body().message());
+            Utils.writeConsoleMessage("An error occurred while creating capacity pool: " + e.getMessage());
             throw e;
         }
     }
@@ -66,18 +67,18 @@ public class Creation
      * @param volumeBody The Volume body used in the creation
      * @return The newly created Volume
      */
-    public static CompletableFuture<VolumeInner> createVolume(AzureNetAppFilesManagementClientImpl anfClient, String[] volumeParams, VolumeInner volumeBody)
+    public static VolumeInner createVolume(NetAppManagementClient anfClient, String[] volumeParams, VolumeInner volumeBody)
     {
         try
         {
-            VolumeInner volume = anfClient.volumes().createOrUpdate(volumeParams[0], volumeParams[1], volumeParams[2], volumeParams[3], volumeBody);
+            VolumeInner volume = anfClient.getVolumes().beginCreateOrUpdate(volumeParams[0], volumeParams[1], volumeParams[2], volumeParams[3], volumeBody).getFinalResult();
             Utils.writeSuccessMessage("Volume successfully created, resourceId: " + volume.id());
 
-            return CompletableFuture.completedFuture(volume);
+            return volume;
         }
-        catch (CloudException e)
+        catch (AzureException e)
         {
-            Utils.writeConsoleMessage("An error occurred while creating volume: " + e.body().message());
+            Utils.writeConsoleMessage("An error occurred while creating volume: " + e.getMessage());
             throw e;
         }
     }
