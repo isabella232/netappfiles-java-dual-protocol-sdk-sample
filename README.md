@@ -40,6 +40,7 @@ and [here](https://mkyong.com/java/how-to-set-java_home-environment-variable-on-
 If unsure, steps 2-3 in [this](https://docs.microsoft.com/en-us/azure/azure-netapp-files/create-volumes-dual-protocol#upload-active-directory-certificate-authority-public-root-certificate) document shows how to export the certificate.
 Make sure this file is stored at the root of the project.
 1. Azure subscription
+1. Subscription needs to have Azure NetApp Files resource provider registered. For more information, see [Register for NetApp Resource Provider](https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-register).
 1. Subscription needs to be enabled for Azure NetApp Files. For more information, please refer to
 [this](https://docs.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register#waitlist) document
 1. Resource Group created
